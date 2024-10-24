@@ -18,14 +18,14 @@ function New-CIPPApplicationCopy {
         continue
     }
     if ($Type -eq 'Application') {
-        #$DelegateResourceAccess = $Existingapp.requiredResourceAccess
+        $DelegateResourceAccess = $Existingapp.requiredResourceAccess
         $ApplicationResourceAccess = $Existingapp.requiredResourceAccess
         $NoTranslateRequired = $false
     } else {
-        #$DelegateResourceAccess = $ExistingApp | Group-Object -Property resourceId | ForEach-Object {
-        #    [pscustomobject]@{ resourceAppId = ($CurrentInfo | Where-Object -Property id -EQ $_.Name).appId; resourceAccess = @($_.Group | ForEach-Object { [pscustomobject]@{ id = $_.scope; type = 'Scope' } } )
-        #    }
-        #}
+        $DelegateResourceAccess = $ExistingApp | Group-Object -Property resourceId | ForEach-Object {
+            [pscustomobject]@{ resourceAppId = ($CurrentInfo | Where-Object -Property id -EQ $_.Name).appId; resourceAccess = @($_.Group | ForEach-Object { [pscustomobject]@{ id = $_.scope; type = 'Scope' } } )
+            }
+        }
         $ApplicationResourceAccess = $ExistingappRoleAssignments | Group-Object -Property ResourceId | ForEach-Object {
             [pscustomobject]@{ resourceAppId = ($CurrentInfo | Where-Object -Property id -EQ $_.Name).appId; resourceAccess = @($_.Group | ForEach-Object { [pscustomobject]@{ id = $_.appRoleId; type = 'Role' } } )
             }
@@ -38,9 +38,8 @@ function New-CIPPApplicationCopy {
         $null = New-GraphPostRequest 'https://graph.microsoft.com/beta/servicePrincipals' -type POST -tenantid $Tenant -body "{ `"appId`": `"$($App)`" }"
         Write-LogMessage -message "Added $App as a service principal" -tenant $tenant -API 'Application Copy' -sev Info
     }
-
     Add-CIPPApplicationPermission -RequiredResourceAccess $ApplicationResourceAccess -ApplicationId $App -Tenantfilter $Tenant
-    #Add-CIPPDelegatedPermission -RequiredResourceAccess $DelegateResourceAccess -ApplicationId $App -Tenantfilter $Tenant -NoTranslateRequired $NoTranslateRequired
+    Add-CIPPDelegatedPermission -RequiredResourceAccess $DelegateResourceAccess -ApplicationId $App -Tenantfilter $Tenant -NoTranslateRequired $NoTranslateRequired
     Write-LogMessage -message "Added permissions to $app" -tenant $tenant -API 'Application Copy' -sev Info
 
     return $Results
